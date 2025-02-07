@@ -182,7 +182,7 @@ public class GitRepo implements AutoCloseable {
 		// Get the rebase result and check status.
 		RebaseResult rebaseInfo = result.getRebaseResult();
 		if (rebaseInfo == null)
-			retVal.append("NO_REBASE");
+			retVal.append("NO_CHANGES");
 		else
 			retVal.append(rebaseInfo.getStatus().toString());
 		// Get the fetch result and count updates.
