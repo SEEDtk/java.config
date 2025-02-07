@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * This is a dummy test class to insure we don't lose the test directory in GIT.
+ * It performs a test that always succeeds.
  *
  * @author Bruce Parrello
  *
