@@ -43,7 +43,7 @@ class GitTests {
 				// Test submodule status.
 				assertThat(repo.hasSubmodules(), equalTo(true));
 				// Do a normal pull.
-				PullResult result = repo.pull("origin");
+				PullResult result = repo.pull("origin", "master");
 				assertThat(result.isSuccessful(), equalTo(true));
 				// Do a pull of all submodules with the top one.
 				Map<String, PullResult> allResults = repo.pullComplete("origin", "master");
@@ -65,7 +65,7 @@ class GitTests {
 		File parentProject = new File(testBaseDir, "brc.parent");
 		File subProject = new File(parentProject, "java.config");
 		try (GitRepo repo = new GitRepo(subProject)) {
-			PullResult result = repo.pull("origin");
+			PullResult result = repo.pull("origin", "master");
 			assertThat(result.isSuccessful(), equalTo(true));
 			log.info("Pull message: {}", GitRepo.resultMessageFor(result));
 		}

@@ -63,11 +63,17 @@ public class GitRepo implements AutoCloseable {
 				gitLoc = null;
 				while (gitLoc == null && gitStream.hasNext()) {
 					String line = gitStream.next();
-					if (line.startsWith("gitDir:")) {
-						String dirName = StringUtils.trimToEmpty(StringUtils.substringAfter(line, ";"));
+					if (line.startsWith("gitdir:")) {
+						String dirName = StringUtils.trimToEmpty(StringUtils.substringAfter(line, ":"));
 						if (! StringUtils.isBlank(dirName)) {
 							// Finally we have found a directory name. Save it as the git location.
 							gitLoc = new File(dirName);
+							if (! gitLoc.isAbsolute()) {
+								// We have a relative path, so we need to canonicalize it.
+								gitLoc = new File(loc, dirName);
+								String canonPath = gitLoc.getCanonicalPath();
+								gitLoc = new File(canonPath);
+							}
 						}
 					}
 				}
@@ -84,14 +90,16 @@ public class GitRepo implements AutoCloseable {
 	 * Pull the latest version of the top-level repo.
 	 *
 	 * @param remote	remote tag to use (usually "origin")
+	 * @param branch	branch to fetch (usually "master")
 	 *
 	 * @return a merge result, indicating what updates occurred
 	 *
 	 * @throws GitAPIException
 	 */
-	public PullResult pull(String remote) throws GitAPIException {
+	public PullResult pull(String remote, String branch) throws GitAPIException {
 		PullCommand cmd = this.repoGit.pull();
 		cmd.setRemote(remote);
+		cmd.setRemoteBranchName(branch);
 		log.info("Pulling remote {} for module {}.", remote, this.baseName);
 		PullResult retVal = cmd.call();
 		return retVal;
@@ -119,6 +127,7 @@ public class GitRepo implements AutoCloseable {
 		// Pull the base module.
 		PullCommand cmd = this.repoGit.pull();
 		cmd.setRemote(remote);
+		cmd.setRemoteBranchName(branch);
 		log.info("Pulling parent module of {}.", this.baseName);
 		PullResult result = cmd.call();
 		retVal.put("(parent)", result);
