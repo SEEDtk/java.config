@@ -55,4 +55,23 @@ class GitTests {
 
 	}
 
+	// TODO: delete this test
+	@Test
+	void testCrazyStuff() throws Exception {
+		File testBaseDir = new File("/Users/drake/Documents/SEEDtk/Data/test_for_git");
+		File parentProject = new File(testBaseDir, "brc.parent");
+		try (GitRepo repo = new GitRepo(parentProject)) {
+			// Test submodule status.
+			assertThat(repo.hasSubmodules(), equalTo(true));
+			// Do a normal pull.
+			PullResult result = repo.pull("origin");
+			assertThat(result.isSuccessful(), equalTo(true));
+			// Do a pull of all submodules with the top one.
+			List<PullResult> allResults = repo.pullComplete("origin", "master");
+			assertThat(allResults.size(), greaterThan(1));
+			for (var subResult : allResults)
+				assertThat(subResult.isSuccessful(), equalTo(true));
+		}
+	}
+
 }
