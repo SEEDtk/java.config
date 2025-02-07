@@ -55,7 +55,7 @@ class GitTests {
 
 	}
 
-	// TODO: delete this test
+	// TODO: delete this test after it works
 	@Test
 	void testCrazyStuff() throws Exception {
 		File testBaseDir = new File("/Users/drake/Documents/SEEDtk/Data/test_for_git");
