@@ -158,7 +158,7 @@ public class GitRepo implements AutoCloseable {
 		if (fetchInfo != null) {
 			int updateCount = fetchInfo.getTrackingRefUpdates().size();
 			if (updateCount > 0)
-				retVal.append(", ").append(updateCount).append(" commits fetched");
+				retVal.append(", ").append(updateCount).append(" refs fetched");
 			String msg = fetchInfo.getMessages();
 			if (! StringUtils.isBlank(msg))
 				retVal.append(", ").append(msg);
