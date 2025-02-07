@@ -22,6 +22,7 @@ import org.eclipse.jgit.submodule.SubmoduleWalk;
 import org.eclipse.jgit.transport.FetchResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.theseed.io.LineReader;
 
 /**
  * This object provides a simple API for manipulating a GIT repo. The repo is
@@ -52,6 +53,28 @@ public class GitRepo implements AutoCloseable {
 	 */
 	public GitRepo(File loc) throws IOException {
 		File gitLoc = new File(loc, ".git");
+		// Compute the GIT directory.
+		if (! gitLoc.isDirectory()) {
+			// Here the GIT directory is not in the normal place, so we need to read
+			// the directory name.
+			if (! gitLoc.canRead())
+				throw new IOException(loc + " does not have a readable GIT configuration.");
+			try (LineReader gitStream = new LineReader(gitLoc)) {
+				gitLoc = null;
+				while (gitLoc == null && gitStream.hasNext()) {
+					String line = gitStream.next();
+					if (line.startsWith("gitDir:")) {
+						String dirName = StringUtils.trimToEmpty(StringUtils.substringAfter(line, ";"));
+						if (! StringUtils.isBlank(dirName)) {
+							// Finally we have found a directory name. Save it as the git location.
+							gitLoc = new File(dirName);
+						}
+					}
+				}
+				if (gitLoc == null)
+					throw new IOException("Could not find a GIT directory pointer for " + loc + ".");
+			}
+		}
 		this.localRepo = new FileRepository(gitLoc);
 		this.repoGit = new Git(this.localRepo);
 		this.baseName = loc.getName();

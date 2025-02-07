@@ -63,19 +63,11 @@ class GitTests {
 	void testCrazyStuff() throws Exception {
 		File testBaseDir = new File("/Users/drake/Documents/SEEDtk/Data/test_for_git");
 		File parentProject = new File(testBaseDir, "brc.parent");
-		try (GitRepo repo = new GitRepo(parentProject)) {
-			// Test submodule status.
-			assertThat(repo.hasSubmodules(), equalTo(true));
-			// Do a pull of all submodules with the top one.
-			Map<String, PullResult> allResults = repo.pullComplete("origin", "master");
-			assertThat(allResults.size(), greaterThan(1));
-			for (var subEntry : allResults.entrySet()) {
-				String module = subEntry.getKey();
-				PullResult subResult = subEntry.getValue();
-				assertThat(module, subResult.isSuccessful(), equalTo(true));
-				String msg = GitRepo.resultMessageFor(subResult);
-				log.info("Messages for module {}: {}", module, msg);
-			}
+		File subProject = new File(parentProject, "java.config");
+		try (GitRepo repo = new GitRepo(subProject)) {
+			PullResult result = repo.pull("origin");
+			assertThat(result.isSuccessful(), equalTo(true));
+			log.info("Pull message: {}", GitRepo.resultMessageFor(result));
 		}
 	}
 

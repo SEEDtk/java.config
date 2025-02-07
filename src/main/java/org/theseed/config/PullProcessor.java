@@ -12,7 +12,15 @@ import org.theseed.basic.ParseFailureException;
  * This subcommand pulls a single GIT repo to update it to the latest version. It is used
  * to do spot fixes on existing code.
  *
- * The environment variable CODE_BASE is used to find the base directory for modules.
+ * The positional parameter is the name of the project to update.
+ *
+ * The command-line options are as follows:
+ *
+ * -h	display command-line usage
+ * -v	display more frequent log messages
+ *
+ * --base		module directory base (default is value of CODE_BASE (if any), else the current directory)
+ * --shallow	if specified, submodules will not be pulled
  *
  * @author Bruce Parrello
  *
