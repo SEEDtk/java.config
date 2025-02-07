@@ -74,9 +74,7 @@ class GitTests {
 				String module = subEntry.getKey();
 				PullResult subResult = subEntry.getValue();
 				assertThat(module, subResult.isSuccessful(), equalTo(true));
-				String msg = subResult.getFetchResult().getMessages();
-				if (StringUtils.isBlank(msg))
-					msg = "no updates";
+				String msg = GitRepo.resultMessageFor(subResult);
 				log.info("Messages for module {}: {}", module, msg);
 			}
 		}

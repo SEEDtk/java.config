@@ -8,15 +8,18 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.PullCommand;
 import org.eclipse.jgit.api.PullResult;
+import org.eclipse.jgit.api.RebaseResult;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.errors.ConfigInvalidException;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.submodule.SubmoduleStatus;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
+import org.eclipse.jgit.transport.FetchResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -135,6 +138,32 @@ public class GitRepo implements AutoCloseable {
 	public void close() {
 		// Insure the git repo is closed.
 		this.repoGit.close();
+	}
+
+	/**
+	 * @return a message about a pull result
+	 *
+	 * @param result	pull result to parse
+	 */
+	public static String resultMessageFor(PullResult result) {
+		StringBuilder retVal = new StringBuilder(80);
+		// Get the rebase result and check status.
+		RebaseResult rebaseInfo = result.getRebaseResult();
+		if (rebaseInfo == null)
+			retVal.append("NO_REBASE");
+		else
+			retVal.append(rebaseInfo.getStatus().toString());
+		// Get the fetch result and count updates.
+		FetchResult fetchInfo = result.getFetchResult();
+		if (fetchInfo != null) {
+			int updateCount = fetchInfo.getTrackingRefUpdates().size();
+			if (updateCount > 0)
+				retVal.append(", ").append(updateCount).append(" commits fetched");
+			String msg = fetchInfo.getMessages();
+			if (! StringUtils.isBlank(msg))
+				retVal.append(", ").append(msg);
+		}
+		return retVal.toString();
 	}
 
 }
