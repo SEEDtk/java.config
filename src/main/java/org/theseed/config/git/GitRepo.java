@@ -5,9 +5,8 @@ package org.theseed.config.git;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.PullCommand;
@@ -78,22 +77,25 @@ public class GitRepo implements AutoCloseable {
 	 * @param remote	remote tag to use (usually "origin")
 	 * @param branch	branch to use for submodules (usually "master")
 	 *
-	 * @return a list of merge results, indicating what updates occurred
+	 * @return a map of module names to pull results, indicating what updates occurred
 	 *
 	 * @throws GitAPIException
 	 * @throws IOException
 	 * @throws ConfigInvalidException
 	 */
-	public List<PullResult> pullComplete(String remote, String branch)
+	public Map<String, PullResult> pullComplete(String remote, String branch)
 			throws GitAPIException, IOException, ConfigInvalidException {
 		// Get the submodule list.
 		Map<String, SubmoduleStatus> submoduleMap = this.repoGit.submoduleStatus().call();
 		final int subTotal = submoduleMap.size();
 		// We will need a result for the top module and one for each submodule.
-		List<PullResult> retVal = new ArrayList<PullResult>(subTotal + 1);
+		Map<String, PullResult> retVal = new TreeMap<String, PullResult>();
 		// Pull the base module.
-		PullResult result = this.pull(remote);
-		retVal.add(result);
+		PullCommand cmd = this.repoGit.pull();
+		cmd.setRemote(remote);
+		log.info("Pulling parent module of {}.", this.baseName);
+		PullResult result = cmd.call();
+		retVal.put("(parent)", result);
 		// Now pull all the submodules. We need to do a submodule walk.
 		if (subTotal > 0) {
 			int subCount = 0;
@@ -105,11 +107,11 @@ public class GitRepo implements AutoCloseable {
 							log.info("Pulling submodule {} of {}: {}.", subCount, subTotal,
 									walk.getModuleName());
 							try (Git subGit = new Git(subRepo)) {
-								PullCommand cmd = subGit.pull();
+								cmd = subGit.pull();
 								cmd.setRemoteBranchName(branch);
 								cmd.setRemote(remote);
 								result = cmd.call();
-								retVal.add(result);
+								retVal.put(walk.getModuleName(), result);
 							}
 						}
 					}

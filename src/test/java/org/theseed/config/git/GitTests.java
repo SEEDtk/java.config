@@ -8,8 +8,9 @@ import static org.hamcrest.Matchers.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
+import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jgit.api.PullResult;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.errors.ConfigInvalidException;
@@ -46,10 +47,13 @@ class GitTests {
 				PullResult result = repo.pull("origin");
 				assertThat(result.isSuccessful(), equalTo(true));
 				// Do a pull of all submodules with the top one.
-				List<PullResult> allResults = repo.pullComplete("origin", "master");
+				Map<String, PullResult> allResults = repo.pullComplete("origin", "master");
 				assertThat(allResults.size(), greaterThan(1));
-				for (var subResult : allResults)
-					assertThat(subResult.isSuccessful(), equalTo(true));
+				for (var subEntry : allResults.entrySet()) {
+					String name = subEntry.getKey();
+					PullResult subResult = subEntry.getValue();
+					assertThat(name, subResult.isSuccessful(), equalTo(true));
+				}
 			}
 		}
 
@@ -63,14 +67,18 @@ class GitTests {
 		try (GitRepo repo = new GitRepo(parentProject)) {
 			// Test submodule status.
 			assertThat(repo.hasSubmodules(), equalTo(true));
-			// Do a normal pull.
-			PullResult result = repo.pull("origin");
-			assertThat(result.isSuccessful(), equalTo(true));
 			// Do a pull of all submodules with the top one.
-			List<PullResult> allResults = repo.pullComplete("origin", "master");
+			Map<String, PullResult> allResults = repo.pullComplete("origin", "master");
 			assertThat(allResults.size(), greaterThan(1));
-			for (var subResult : allResults)
-				assertThat(subResult.isSuccessful(), equalTo(true));
+			for (var subEntry : allResults.entrySet()) {
+				String module = subEntry.getKey();
+				PullResult subResult = subEntry.getValue();
+				assertThat(module, subResult.isSuccessful(), equalTo(true));
+				String msg = subResult.getFetchResult().getMessages();
+				if (StringUtils.isBlank(msg))
+					msg = "no updates";
+				log.info("Messages for module {}: {}", module, msg);
+			}
 		}
 	}
 
