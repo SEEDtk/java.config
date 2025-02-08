@@ -58,17 +58,4 @@ class GitTests {
 
 	}
 
-	// TODO: delete this test after it works
-	@Test
-	void testCrazyStuff() throws Exception {
-		File testBaseDir = new File("/Users/drake/Documents/SEEDtk/Data/test_for_git");
-		File parentProject = new File(testBaseDir, "brc.parent");
-		File subProject = new File(parentProject, "java.config");
-		try (GitRepo repo = new GitRepo(subProject)) {
-			PullResult result = repo.pull("origin", "master");
-			assertThat(result.isSuccessful(), equalTo(true));
-			log.info("Pull message: {}", GitRepo.resultMessageFor(result));
-		}
-	}
-
 }
