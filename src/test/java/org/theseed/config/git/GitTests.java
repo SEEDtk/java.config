@@ -78,8 +78,15 @@ class GitTests {
 			assertThat(name, in(PROJ_SET));
 		}
 		assertThat(count, equalTo(PROJ_SET.size()));
+		// Create a base processor.
+		// Test random access.
+		for (String project : PROJ_SET) {
+			try (GitRepo repo = codeBase.getRepo(project)) {
+				String branch = repo.getBranch("origin");
+				assertThat(project, branch, not(nullValue()));
+			}
+		}
 	}
-
 
 
 }

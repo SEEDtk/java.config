@@ -5,15 +5,18 @@ package org.theseed.config.git;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.ListBranchCommand;
+import org.eclipse.jgit.api.ListBranchCommand.ListMode;
+import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.PullCommand;
 import org.eclipse.jgit.api.PullResult;
-import org.eclipse.jgit.api.RebaseResult;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.errors.ConfigInvalidException;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
@@ -92,7 +95,7 @@ public class GitRepo implements AutoCloseable {
 	 * Pull the latest version of the top-level repo.
 	 *
 	 * @param remote	remote tag to use (usually "origin")
-	 * @param branch	branch to fetch (usually "master")
+	 * @param branch	branch to fetch (or NULL for the default)
 	 *
 	 * @return a merge result, indicating what updates occurred
 	 *
@@ -101,6 +104,10 @@ public class GitRepo implements AutoCloseable {
 	public PullResult pull(String remote, String branch) throws GitAPIException {
 		PullCommand cmd = this.repoGit.pull();
 		cmd.setRemote(remote);
+		if (branch == null) {
+			// Get the current remote branch.
+			branch = this.getBranch(remote);
+		}
 		cmd.setRemoteBranchName(branch);
 		log.info("Pulling remote {} for module {}.", remote, this.baseName);
 		PullResult retVal = cmd.call();
@@ -111,7 +118,7 @@ public class GitRepo implements AutoCloseable {
 	 * Pull the latest version of the repo and all its submodules (if any).
 	 *
 	 * @param remote	remote tag to use (usually "origin")
-	 * @param branch	branch to use for submodules (usually "master")
+	 * @param branch	branch to use (or NULL for the default)
 	 *
 	 * @return a map of module names to pull results, indicating what updates occurred
 	 *
@@ -169,12 +176,6 @@ public class GitRepo implements AutoCloseable {
 		return (submoduleMap.size() > 0);
 	}
 
-	@Override
-	public void close() {
-		// Insure the git repo is closed.
-		this.repoGit.close();
-	}
-
 	/**
 	 * @return a message about a pull result
 	 *
@@ -182,12 +183,12 @@ public class GitRepo implements AutoCloseable {
 	 */
 	public static String resultMessageFor(PullResult result) {
 		StringBuilder retVal = new StringBuilder(80);
-		// Get the rebase result and check status.
-		RebaseResult rebaseInfo = result.getRebaseResult();
-		if (rebaseInfo == null)
-			retVal.append("NO_REBASE");
+		// Get the merge result and check status.
+		MergeResult mergeInfo = result.getMergeResult();
+		if (mergeInfo == null)
+			retVal.append("NO_MERGE");
 		else
-			retVal.append(rebaseInfo.getStatus().toString());
+			retVal.append(mergeInfo.getMergeStatus().toString());
 		// Get the fetch result and count updates.
 		FetchResult fetchInfo = result.getFetchResult();
 		if (fetchInfo != null) {
@@ -214,20 +215,46 @@ public class GitRepo implements AutoCloseable {
 	}
 
 	/**
-	 * @return the branch name for this repo (or NULL if none)
+	 * @return the remote branch name for this repo (or NULL if none)
+	 *
+	 * @param remote	target remote (usually "origin")
 	 */
-	public String getBranch() {
-		String retVal;
+	public String getBranch(String remote) {
+		String retVal = null;
 		try {
-			List<Ref> branches = this.repoGit.branchList().call();
-			for (Ref branch : branches)
-				log.info("Branch ref {}", branch.toString());
-			retVal = "master";
+			// Form a search string from the remote name.
+			String remoteIndicator = "/" + remote + "/";
+			// Get the branches.
+			ListBranchCommand cmd = this.repoGit.branchList();
+			cmd.setListMode(ListMode.REMOTE);
+			List<Ref> branches = cmd.call();
+			Iterator<Ref> iter = branches.iterator();
+			// Find the first ref for the target remote.
+			while (retVal == null && iter.hasNext()) {
+				Ref refI = iter.next();
+				String refString = refI.getName();
+				if (refString.contains(remoteIndicator)) {
+					// Here we've found the desired remote. Get its leaf referenc/
+					String leafName = refI.getLeaf().getName();
+					// Shorten us to the branch part of the name.
+					retVal = StringUtils.substringAfterLast(leafName, "/");
+				}
+			}
+			if (retVal == null)
+				log.error("Could not find remote {} in {}.", remote, this.baseName);
 		} catch (GitAPIException e) {
-			log.error("Error retrieving branch list for {}: {}", this.baseName, e.toString());
-			retVal = null;
+			log.error("Error processing branch list for {}: {}", this.baseName, e.toString());
 		}
 		return retVal;
+	}
+
+	@Override
+	public void close() {
+		// Insure the git repo is closed.
+		if (this.repoGit != null)
+			this.repoGit.close();
+		if (this.localRepo != null)
+			this.localRepo.close();
 	}
 
 }
