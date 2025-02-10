@@ -8,7 +8,9 @@ import static org.hamcrest.Matchers.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.jgit.api.PullResult;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -55,7 +57,29 @@ class GitTests {
 				}
 			}
 		}
-
 	}
+
+	// TODO: delete this test after it works
+	@Test
+	void testCrazyStuff() throws Exception {
+		File testBaseDir = new File("/Users/drake/Documents/SEEDtk/Data/test_for_git");
+		CodeBase codeBase = new CodeBase(testBaseDir);
+		// Build a set of the known projects.
+		Set<String> PROJ_SET = Set.of("aurora.python", "brc.parent", "core.utils", "genome.survey",
+				"basic", "bins.generate", "distance", "dl4j.decision", "dl4j.eval", "excel.utils",
+				"genome.changes", "genome.download", "io.template", "java.config", "java.erdb",
+				"kmers.hammer", "kmers.reps", "p3api", "sequence", "shared");
+		// Test iteration through the code base.
+		int count = 0;
+		Iterator<File> iter = codeBase.new ProjectIterator();
+		while (iter.hasNext()) {
+			count++;
+			String name = iter.next().getName();
+			assertThat(name, in(PROJ_SET));
+		}
+		assertThat(count, equalTo(PROJ_SET.size()));
+	}
+
+
 
 }

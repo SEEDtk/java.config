@@ -5,6 +5,7 @@ package org.theseed.config.git;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -16,6 +17,7 @@ import org.eclipse.jgit.api.RebaseResult;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.errors.ConfigInvalidException;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.submodule.SubmoduleStatus;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
@@ -126,6 +128,7 @@ public class GitRepo implements AutoCloseable {
 		Map<String, PullResult> retVal = new TreeMap<String, PullResult>();
 		// Pull the base module.
 		PullCommand cmd = this.repoGit.pull();
+		cmd.setRebase(false);
 		cmd.setRemote(remote);
 		cmd.setRemoteBranchName(branch);
 		log.info("Pulling parent module of {}.", this.baseName);
@@ -182,7 +185,7 @@ public class GitRepo implements AutoCloseable {
 		// Get the rebase result and check status.
 		RebaseResult rebaseInfo = result.getRebaseResult();
 		if (rebaseInfo == null)
-			retVal.append("NO_CHANGES");
+			retVal.append("NO_REBASE");
 		else
 			retVal.append(rebaseInfo.getStatus().toString());
 		// Get the fetch result and count updates.
@@ -196,6 +199,35 @@ public class GitRepo implements AutoCloseable {
 				retVal.append(", ").append(msg);
 		}
 		return retVal.toString();
+	}
+
+	@Override
+	public String toString() {
+		String branchName;
+		try {
+			branchName = this.localRepo.getBranch();
+			if (branchName == null) branchName = "(detached)";
+		} catch (IOException e) {
+			branchName = e.toString();
+		}
+		return this.baseName + ": branch " + branchName;
+	}
+
+	/**
+	 * @return the branch name for this repo (or NULL if none)
+	 */
+	public String getBranch() {
+		String retVal;
+		try {
+			List<Ref> branches = this.repoGit.branchList().call();
+			for (Ref branch : branches)
+				log.info("Branch ref {}", branch.toString());
+			retVal = "master";
+		} catch (GitAPIException e) {
+			log.error("Error retrieving branch list for {}: {}", this.baseName, e.toString());
+			retVal = null;
+		}
+		return retVal;
 	}
 
 }
