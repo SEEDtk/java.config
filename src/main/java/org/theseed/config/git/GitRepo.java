@@ -104,6 +104,7 @@ public class GitRepo implements AutoCloseable {
 	public PullResult pull(String remote, String branch) throws GitAPIException {
 		PullCommand cmd = this.repoGit.pull();
 		cmd.setRemote(remote);
+		cmd.setRebase(false);
 		if (branch == null) {
 			// Get the current remote branch.
 			branch = this.getBranch(remote);
@@ -131,6 +132,9 @@ public class GitRepo implements AutoCloseable {
 		// Get the submodule list.
 		Map<String, SubmoduleStatus> submoduleMap = this.repoGit.submoduleStatus().call();
 		final int subTotal = submoduleMap.size();
+		// Insure we have a branch name.
+		if (branch == null)
+			branch = this.getBranch(remote);
 		// We will need a result for the top module and one for each submodule.
 		Map<String, PullResult> retVal = new TreeMap<String, PullResult>();
 		// Pull the base module.
@@ -220,12 +224,24 @@ public class GitRepo implements AutoCloseable {
 	 * @param remote	target remote (usually "origin")
 	 */
 	public String getBranch(String remote) {
+		return computeBranch(this.repoGit, remote);
+	}
+
+	/**
+	 * Compute the current branch for a git repository relative to a specified remote.
+	 *
+	 * @param rGit		git repository in question
+	 * @param remote	remote name (usually "origin")
+	 *
+	 * @return the branch name, or NULL if none was found
+	 */
+	public static String computeBranch(Git rGit, String remote) {
 		String retVal = null;
 		try {
 			// Form a search string from the remote name.
 			String remoteIndicator = "/" + remote + "/";
 			// Get the branches.
-			ListBranchCommand cmd = this.repoGit.branchList();
+			ListBranchCommand cmd = rGit.branchList();
 			cmd.setListMode(ListMode.REMOTE);
 			List<Ref> branches = cmd.call();
 			Iterator<Ref> iter = branches.iterator();
@@ -241,9 +257,9 @@ public class GitRepo implements AutoCloseable {
 				}
 			}
 			if (retVal == null)
-				log.error("Could not find remote {} in {}.", remote, this.baseName);
+				log.error("Could not find remote {} in {}.", remote, rGit);
 		} catch (GitAPIException e) {
-			log.error("Error processing branch list for {}: {}", this.baseName, e.toString());
+			log.error("Error processing branch list for {}: {}", rGit, e.toString());
 		}
 		return retVal;
 	}
