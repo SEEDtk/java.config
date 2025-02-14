@@ -6,6 +6,8 @@ package org.theseed.config.git;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Iterator;
+
 import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.args4j.Option;
 import org.slf4j.Logger;
@@ -72,8 +74,11 @@ public abstract class BaseGitProcessor extends BaseProcessor {
 	/**
 	 * Validate the options and parameters for this command. Do not open a GitRepo
 	 * in here or you risk a resource leak.
+	 *
+	 * @throws IOException
+	 * @throws ParseFailureException
 	 */
-	protected abstract void validateGitParms();
+	protected abstract void validateGitParms() throws IOException, ParseFailureException;
 
 	@Override
 	final protected void runCommand() throws Exception {
@@ -82,8 +87,10 @@ public abstract class BaseGitProcessor extends BaseProcessor {
 
 	/**
 	 * Process this GIT-related command function.
+	 *
+	 * @throws Exception
 	 */
-	protected abstract void runGitCommand();
+	protected abstract void runGitCommand() throws Exception;
 
 	/**
 	 * This method returns a git repo. It should be used in a try block. If the
@@ -106,6 +113,13 @@ public abstract class BaseGitProcessor extends BaseProcessor {
 	 */
 	public File getBaseDir() {
 		return this.baseDir;
+	}
+
+	/**
+	 * @return an iterator through all the repos in this code base
+	 */
+	public Iterator<File> getRepos() {
+		return this.codeBase.iterator();
 	}
 
 

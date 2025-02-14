@@ -20,7 +20,7 @@ public class App {
 
     /** static array containing command names and comments */
     protected static final String[] COMMANDS = new String[] {
-            "pull", "update a single repo"
+            "pull", "update a code base"
     };
 
     public static void main(String[] args) {

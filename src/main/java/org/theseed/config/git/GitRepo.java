@@ -5,7 +5,7 @@ package org.theseed.config.git;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Iterator;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -22,9 +22,10 @@ import org.eclipse.jgit.errors.ConfigInvalidException;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.submodule.SubmoduleStatus;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
-import org.eclipse.jgit.transport.FetchResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.theseed.io.LineReader;
@@ -193,16 +194,6 @@ public class GitRepo implements AutoCloseable {
 			retVal.append("NO_MERGE");
 		else
 			retVal.append(mergeInfo.getMergeStatus().toString());
-		// Get the fetch result and count updates.
-		FetchResult fetchInfo = result.getFetchResult();
-		if (fetchInfo != null) {
-			int updateCount = fetchInfo.getTrackingRefUpdates().size();
-			if (updateCount > 0)
-				retVal.append(", ").append(updateCount).append(" refs fetched");
-			String msg = fetchInfo.getMessages();
-			if (! StringUtils.isBlank(msg))
-				retVal.append(", ").append(msg);
-		}
 		return retVal.toString();
 	}
 
@@ -234,6 +225,7 @@ public class GitRepo implements AutoCloseable {
 	 * @param remote	remote name (usually "origin")
 	 *
 	 * @return the branch name, or NULL if none was found
+	 *
 	 */
 	public static String computeBranch(Git rGit, String remote) {
 		String retVal = null;
@@ -244,17 +236,26 @@ public class GitRepo implements AutoCloseable {
 			ListBranchCommand cmd = rGit.branchList();
 			cmd.setListMode(ListMode.REMOTE);
 			List<Ref> branches = cmd.call();
-			Iterator<Ref> iter = branches.iterator();
-			// Find the first ref for the target remote.
-			while (retVal == null && iter.hasNext()) {
-				Ref refI = iter.next();
-				String refString = refI.getName();
-				if (refString.contains(remoteIndicator)) {
-					// Here we've found the desired remote. Get its leaf referenc/
-					String leafName = refI.getLeaf().getName();
-					// Shorten us to the branch part of the name.
-					retVal = StringUtils.substringAfterLast(leafName, "/");
+			// Find the latest ref for the target remote.
+			try (RevWalk walk = new RevWalk(rGit.getRepository())) {
+				// Initialize to a null date. We want the latest.
+				Instant latest = Instant.EPOCH;
+				for (Ref refI : branches) {
+					String refString = refI.getName();
+					if (refString.contains(remoteIndicator)) {
+						RevCommit commit = walk.parseCommit(refI.getObjectId());
+						Instant commitDate = commit.getCommitterIdent().getWhenAsInstant();
+						if (commitDate.isAfter(latest)) {
+							String leafName = refI.getLeaf().getName();
+							// Shorten us to the branch part of the name.
+							retVal = StringUtils.substringAfterLast(leafName, remoteIndicator);
+							// Save the commit time.
+							latest = commitDate;
+						}
+					}
 				}
+			} catch (IOException e) {
+				log.error("Error retrieving branch data: {}", e.toString());
 			}
 			if (retVal == null)
 				log.error("Could not find remote {} in {}.", remote, rGit);
