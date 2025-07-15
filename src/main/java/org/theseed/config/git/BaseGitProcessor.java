@@ -61,14 +61,13 @@ public abstract class BaseGitProcessor extends BaseProcessor {
 	protected abstract void setGitDefaults();
 
 	@Override
-	final protected boolean validateParms() throws IOException, ParseFailureException {
+	final protected void validateParms() throws IOException, ParseFailureException {
 		// Validate the base directory.
 		if (! this.baseDir.isDirectory())
 			throw new FileNotFoundException("Code base directory " + this.baseDir + " is not found or invalid.");
 		this.codeBase = new CodeBase(this.baseDir);
 		// Allow the subclass to validate its parameters.
 		this.validateGitParms();
-		return true;
 	}
 
 	/**
