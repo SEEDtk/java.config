@@ -42,7 +42,7 @@ public class GitRepo implements AutoCloseable {
 
 	// FIELDS
 	/** logging facility */
-	protected static Logger log = LoggerFactory.getLogger(GitRepo.class);
+	private static final Logger log = LoggerFactory.getLogger(GitRepo.class);
 	/** target local repo */
 	private Repository localRepo;
 	/** JGit API object for the local repo */

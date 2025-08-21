@@ -36,7 +36,7 @@ public class PullProcessor extends BaseGitProcessor {
 
 	// FIELDS
 	/** logging facility */
-	protected static Logger log = LoggerFactory.getLogger(PullProcessor.class);
+	private static final Logger log = LoggerFactory.getLogger(PullProcessor.class);
 
 	// COMMAND-LINE OPTIONS
 

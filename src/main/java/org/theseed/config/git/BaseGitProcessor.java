@@ -10,8 +10,6 @@ import java.util.Iterator;
 
 import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.args4j.Option;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.theseed.basic.BaseProcessor;
 import org.theseed.basic.ParseFailureException;
 
@@ -33,8 +31,6 @@ import org.theseed.basic.ParseFailureException;
 public abstract class BaseGitProcessor extends BaseProcessor {
 
 	// FIELDS
-	/** logging facility */
-	protected static Logger log = LoggerFactory.getLogger(BaseGitProcessor.class);
 	/** master code base */
 	private CodeBase codeBase;
 

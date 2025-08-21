@@ -12,8 +12,6 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Bruce Parrello
@@ -21,15 +19,11 @@ import org.slf4j.LoggerFactory;
  */
 class GitTests {
 
-	// FIELDS
-	/** logging facility */
-	protected static Logger log = LoggerFactory.getLogger(GitTests.class);
-
 	@Test
 	void testCrazyStuff() throws Exception {
 		File testBaseDir = new File("/Users/drake/Documents/SEEDtk/git");
 		CodeBase codeBase = new CodeBase(testBaseDir);
-		Map<String, String> branchMap = new TreeMap<String, String>();
+		Map<String, String> branchMap = new TreeMap<>();
 		// Get branches for all the projects.
 		Iterator<File> iter = codeBase.iterator();
 		while (iter.hasNext()) {
